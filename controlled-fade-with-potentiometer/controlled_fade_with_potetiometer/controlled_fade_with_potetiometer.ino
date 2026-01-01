@@ -4,6 +4,6 @@ void setup(){
 }
 
 void loop(){
- int fade_ratio = analogRead(A2)*255/1023;
+ int fade_ratio = analogRead(A2) * (255.0/1023.0);
 	analogWrite(11, fade_ratio);
 }
