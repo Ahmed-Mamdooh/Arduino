@@ -1,34 +1,45 @@
-#define LED_1_PIN 11
-#define LED_2_PIN 10
+#define LED1 11
+#define LED2 10
+#define LED3 9
+#define POTMET A2
 
-unsigned long previousTimeLED1Blink = millis();
-unsigned long timeIntervalLED1Blink = 600;
+#define BUTTON 2
+unsigned long blinkDelay = 500;
+unsigned long lastTimeBlink = 0;
 
-unsigned long previousTimeLED2Blink = millis();
-unsigned long timeIntervalLED2Blink = 150;
+void setup(){
+  pinMode(LED1, OUTPUT);
+  digitalWrite(LED1, HIGH);
 
-int LED1State = LOW;
-int LED2State = LOW;
-
-void setup() {
-  pinMode(LED_1_PIN, OUTPUT);
-  pinMode(LED_2_PIN, OUTPUT);
+  pinMode(LED2, OUTPUT);
+  
+  pinMode(POTMET, INPUT);
+  pinMode(LED3, OUTPUT);
+  pinMode(BUTTON, INPUT_PULLUP);
+  Serial.begin(115200);
+  Serial.setTimeout(10);
 }
 
-void loop() {
+void loop(){
   unsigned long timeNow = millis();
-
-  // LED 1 Logic
-  if (timeNow - previousTimeLED1Blink >= timeIntervalLED1Blink) {
-    LED1State = !LED1State; // Simplified toggle
-    digitalWrite(LED_1_PIN, LED1State);
-    previousTimeLED1Blink = timeNow; // Reset the timer
+  if(Serial.available() > 0){
+    int data = Serial.parseInt();
+    if (data > 0 && data <= 4000) blinkDelay = data;
+  }
+  
+  if(timeNow - lastTimeBlink >= blinkDelay){
+      digitalWrite(LED1, !digitalRead(LED1));
+    lastTimeBlink = timeNow;
   }
 
-  // LED 2 Logic (Moved outside of the LED 1 bracket)
-  if (timeNow - previousTimeLED2Blink >= timeIntervalLED2Blink) {
-    LED2State = !LED2State; // Simplified toggle
-    digitalWrite(LED_2_PIN, LED2State);
-    previousTimeLED2Blink = timeNow; // Reset the timer
-  }
+  
+  
+int fade_ratio = analogRead(POTMET) / 4;
+  analogWrite(LED2, fade_ratio);
+
+  
+
+if(digitalRead(BUTTON) == HIGH) digitalWrite(LED3, HIGH);
+else digitalWrite(LED3, LOW);
+
 }
