@@ -1,10 +1,9 @@
 #include <LiquidCrystal.h>
+#include <IRremote.h>
 
 #define  ECHO_PIN 3
 #define TRIGGER_PIN 4
 #define WARNING_LED_PIN 11
-#define LOCK_DISTANCE 10.0
-#define WARNING_DISTANCE 50.0
 #define ERROR_LED_PIN 12
 #define BUTTON_PIN 2
 #define LCD_RS_PIN A5
@@ -13,6 +12,18 @@
 #define LCD_D5_PIN 7
 #define LCD_D6_PIN 8
 #define LCD_D7_PIN 9
+#define IR_RECEIVE_PIN 5
+
+
+#define LOCK_DISTANCE 10.0
+#define WARNING_DISTANCE 50.0
+#define IR_BUTTON_PLAY
+#define IR_BUTTON_OFF
+#define IR_BUTTON_EQ
+#define IR_BUTTON_UP
+#define IR_BUTTON_DOWN
+
+
 // LiquidCrystal
 
 LiquidCrystal lcd(LCD_RS_PIN, LCD_E_PIN, LCD_D4_PIN, LCD_D5_PIN, LCD_D6_PIN, LCD_D7_PIN);
@@ -49,6 +60,7 @@ byte buttonState = HIGH;
 void setup() {
 Serial.begin(115200);
 lcd.begin(16,2);
+IrReceiver.begin(IR_RECEIVE_PIN);
 pinMode(ECHO_PIN, INPUT);
 pinMode(WARNING_LED_PIN, OUTPUT);
 pinMode(ERROR_LED_PIN, OUTPUT);
@@ -110,6 +122,13 @@ void loop()
 
       }
     }
+  }
+  
+  // Receive signals at any time
+  if(IrReceiver.decode()){
+    IrReceiver.resume();
+    long command = IrReceiver.decodedIRData.command;
+    Serial.println(command);
   }
 
 }
