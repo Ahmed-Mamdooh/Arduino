@@ -3,6 +3,7 @@
 #define WARNING_LED_PIN 11
 #define LOCK_DISTANCE 10.0
 #define ERROR_LED_PIN 12
+#define BUTTON_PIN 2
 // #define
 // Ultrasonic
 unsigned long lastTimeUltrasonicTrigger = millis();
@@ -25,6 +26,76 @@ unsigned long lastTimeErrorLEDBlinked = millis();
 unsigned long errorLEDDelay = 300;
 byte errorLEDState = LOW;
 bool isLocked = false;
+
+// BUTTON
+unsigned long lastTimeButtonChanged = millis();
+unsigned long  buttonDebounceDelay = 50;
+// byte buttonState;
+byte buttonState = HIGH;
+
+
+void setup() {
+Serial.begin(115200);
+pinMode(ECHO_PIN, INPUT);
+pinMode(WARNING_LED_PIN, OUTPUT);
+pinMode(ERROR_LED_PIN, OUTPUT);
+pinMode(BUTTON_PIN, INPUT);
+pinMode(TRIGGER_PIN, OUTPUT);
+attachInterrupt(digitalPinToInterrupt(ECHO_PIN),
+echoPinInterrupt,
+CHANGE);
+
+buttonState = digitalRead(BUTTON_PIN);
+
+}
+
+void loop() 
+{
+  unsigned long timeNow = millis();
+
+
+  if(isLocked){
+    if(timeNow - lastTimeErrorLEDBlinked > errorLEDDelay){
+      lastTimeErrorLEDBlinked += errorLEDDelay;
+      toggleErrorLED();
+      toggleWarningLED();
+    }
+
+    if(timeNow - lastTimeButtonChanged > buttonDebounceDelay){
+      byte newButtonState  = digitalRead(BUTTON_PIN);
+      if(newButtonState != buttonState){
+        lastTimeButtonChanged = timeNow;
+          unlock();
+      }
+    }
+  }
+  
+  else {
+
+
+    if(timeNow - lastTimeUltrasonicTrigger > ultrasonicTriggerDelay){
+      lastTimeUltrasonicTrigger += ultrasonicTriggerDelay;
+      triggerUltrasonicSensor();
+    }
+
+
+    if(timeNow - lastTimeWarningLEDBlinked > warningLEDDelay){
+      lastTimeWarningLEDBlinked += warningLEDDelay;
+      toggleWarningLED();
+    }
+
+    if(newDistanceAvailable){
+    double distance = getUltrasonicDistance();
+    setWarningLEDBlinkRateFromDistance(distance);
+    if(distance < LOCK_DISTANCE){
+      lock();
+      }
+    }
+  }
+
+}
+
+
 
 void triggerUltrasonicSensor(){
 digitalWrite(TRIGGER_PIN, LOW);
@@ -74,54 +145,12 @@ void lock(){
     warningLEDState= LOW;
     errorLEDState = LOW;
   }
-
-
-
 }
 
-void setup() {
-Serial.begin(115200);
-pinMode(ECHO_PIN, INPUT);
-pinMode(WARNING_LED_PIN, OUTPUT);
-pinMode(ERROR_LED_PIN, OUTPUT);
-
-pinMode(TRIGGER_PIN, OUTPUT);
-attachInterrupt(digitalPinToInterrupt(ECHO_PIN),
-echoPinInterrupt,
-CHANGE);
-
-}
-
-void loop() {
-unsigned long timeNow = millis();
-
+void unlock(){
   if(isLocked){
-    if(timeNow - lastTimeErrorLEDBlinked > errorLEDDelay){
-      lastTimeErrorLEDBlinked += errorLEDDelay;
-      toggleErrorLED();
-      toggleWarningLED();
-    }
+    isLocked = false;
+    errorLEDState = LOW;
+    digitalWrite(ERROR_LED_PIN, errorLEDState);
   }
-  else{ 
-    if(timeNow - lastTimeUltrasonicTrigger > ultrasonicTriggerDelay){
-    lastTimeUltrasonicTrigger += ultrasonicTriggerDelay;
-    triggerUltrasonicSensor();
-  }
-
-
-  if(timeNow - lastTimeWarningLEDBlinked > warningLEDDelay){
-    lastTimeWarningLEDBlinked += warningLEDDelay;
-    toggleWarningLED();
-  }
-
-  if(newDistanceAvailable){
-  double distance = getUltrasonicDistance();
-  setWarningLEDBlinkRateFromDistance(distance);
-  Serial.println(distance);
-  if(distance < LOCK_DISTANCE){
-    lock();
-}
-  }
-    }
-
 }
