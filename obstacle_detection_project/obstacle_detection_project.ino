@@ -1,10 +1,22 @@
+#include <LiquidCrystal.h>
+
 #define  ECHO_PIN 3
 #define TRIGGER_PIN 4
 #define WARNING_LED_PIN 11
 #define LOCK_DISTANCE 10.0
+#define WARNING_DISTANCE 50.0
 #define ERROR_LED_PIN 12
 #define BUTTON_PIN 2
-// #define
+#define LCD_RS_PIN A5
+#define LCD_E_PIN A4
+#define LCD_D4_PIN 6
+#define LCD_D5_PIN 7
+#define LCD_D6_PIN 8
+#define LCD_D7_PIN 9
+// LiquidCrystal
+
+LiquidCrystal lcd(LCD_RS_PIN, LCD_E_PIN, LCD_D4_PIN, LCD_D5_PIN, LCD_D6_PIN, LCD_D7_PIN);
+
 // Ultrasonic
 unsigned long lastTimeUltrasonicTrigger = millis();
 unsigned long ultrasonicTriggerDelay = 60;
@@ -36,6 +48,7 @@ byte buttonState = HIGH;
 
 void setup() {
 Serial.begin(115200);
+lcd.begin(16,2);
 pinMode(ECHO_PIN, INPUT);
 pinMode(WARNING_LED_PIN, OUTPUT);
 pinMode(ERROR_LED_PIN, OUTPUT);
@@ -46,7 +59,9 @@ echoPinInterrupt,
 CHANGE);
 
 buttonState = digitalRead(BUTTON_PIN);
-
+lcd.print("Initializing...");
+delay(1000);
+lcd.clear();
 }
 
 void loop() 
@@ -59,6 +74,7 @@ void loop()
       lastTimeErrorLEDBlinked += errorLEDDelay;
       toggleErrorLED();
       toggleWarningLED();
+      
     }
 
     if(timeNow - lastTimeButtonChanged > buttonDebounceDelay){
@@ -87,8 +103,11 @@ void loop()
     if(newDistanceAvailable){
     double distance = getUltrasonicDistance();
     setWarningLEDBlinkRateFromDistance(distance);
+    printDistanceOnLCD(distance);
     if(distance < LOCK_DISTANCE){
       lock();
+    printDistanceOnLCD(distance);
+
       }
     }
   }
@@ -98,11 +117,11 @@ void loop()
 
 
 void triggerUltrasonicSensor(){
-digitalWrite(TRIGGER_PIN, LOW);
-delayMicroseconds(2);
-digitalWrite(TRIGGER_PIN, HIGH);
-delayMicroseconds(10);
-digitalWrite(TRIGGER_PIN, LOW);
+  digitalWrite(TRIGGER_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIGGER_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIGGER_PIN, LOW);
 }
 
 double getUltrasonicDistance(){
@@ -135,7 +154,7 @@ void toggleWarningLED(){
   digitalWrite(WARNING_LED_PIN, warningLEDState);
 }
 void setWarningLEDBlinkRateFromDistance(double distance){
-warningLEDDelay = distance * 4;
+  warningLEDDelay = distance * 4;
 }
 
 
@@ -152,5 +171,32 @@ void unlock(){
     isLocked = false;
     errorLEDState = LOW;
     digitalWrite(ERROR_LED_PIN, errorLEDState);
+  }
+}
+
+void printDistanceOnLCD(double distance){
+  if (isLocked){
+  lcd.setCursor(0,0);
+  lcd.print("Obstacle!!      ");
+  lcd.setCursor(0,1);
+  lcd.print("Press to Unolock");
+  
+  
+  }
+  else{
+  lcd.setCursor(0, 0);
+    lcd.print("Dist: ");
+    lcd.print(distance);
+    lcd.print(" cm     ");
+    lcd.setCursor(0, 1);
+    
+    if(distance > WARNING_DISTANCE){
+      lcd.print("No Obstacle.              ");
+    }
+    else{
+      lcd.print("Warning!!           ");
+    }
+
+    // lcd.clear();
   }
 }
